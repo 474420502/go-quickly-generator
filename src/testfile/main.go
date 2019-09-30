@@ -50,6 +50,16 @@ func (e *ExStruct) SetChildStructA(a int) {
 	e.ChildStruct.A = a
 }
 
+// GetChildStructA get
+func (e *ExStruct) GetChildStructA(a int) {
+	e.ChildStruct.A = a
+}
+
+// GetC get
+func (e *ExStruct) GetC(a int) {
+	e.ChildStruct.A = a
+}
+
 func main() {
 	a := ExStruct{}
 	b := MyStruct{}

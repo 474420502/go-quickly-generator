@@ -4,23 +4,42 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // Import the module and reference it with the alias vscode in your code below
 
 import * as vscode from 'vscode';
+import { resolve } from 'url';
+import { rejects } from 'assert';
+import { prototype } from 'events';
 
 class StructInfo {
+    ShorthandName: string;
     Name: string;
     Range: number[];
-    Fields: Field[];
+    Fields: Map<string, Field>;
 
     constructor(name: string, fields: Field[], range: number[]) {
         this.Name = name;
+
+        var sname: string = "";
+        sname += this.Name[0].toLowerCase();
+        for (let i = 1; i < this.Name.length; i++) {
+            let c = this.Name.charCodeAt(i);
+            if (c <= 90 && c >= 65) {
+                sname += this.Name[i].toLowerCase();
+            }
+        }
+
+        this.ShorthandName = this.Name;
         this.Range = range;
-        this.Fields = fields;
+
+        this.Fields = new Map<string, Field>();
+        fields.forEach((value)=>{
+            this.Fields.set(value.Key, value);
+        });
     }
 
     getFieldsString(): string[] {
         var result: string[] = [];
 
-        this.Fields.forEach( (field, index) => {
-            result.push( "("+index+") " + this.Name + field.Parent + field.Name + " " + field.Type);
+        this.Fields.forEach((field, index) => {
+            result.push(this.Name + field.toString());
         });
 
         return result;
@@ -32,12 +51,18 @@ class Field {
     Type: string;
     Name: string;
     Range: number[];
+    Key: string;
 
     constructor(parent: string, type: string, name: string, range: number[]) {
         this.Parent = parent;
         this.Type = type;
         this.Name = name;
         this.Range = range;
+        this.Key = (this.Parent.substr(1) + this.Name).replace(".", "");
+    }
+
+    toString(): string {
+        return this.Parent.substr(1) + this.Name + " " + this.Type;
     }
 }
 
@@ -51,15 +76,90 @@ function activate(context: vscode.ExtensionContext) {
         // The code you place here will be executed every time your command is executed
         // Display a message box to the user
         let sinfo = GetStruct();
-        if(sinfo) {
+        if (sinfo) {
             console.log(sinfo);
-            const options = <vscode.QuickPickOptions>{canPickMany: true, placeHolder: "select the fields that would be generator get set"};
-            vscode.window.showQuickPick(sinfo.getFieldsString(), options).then( (input)=>{
-                if(typeof(input) !== "string") {
-                    var  selections: string[] = input as any;
-                    console.log(selections); // TODO:
+
+            let editor = vscode.window.activeTextEditor;
+            if (editor !== undefined) {
+
+                let regexFunction = `func {0,}\\(.+${sinfo.Name} {0,}\\) {0,}[GS]et([a-zA-Z_]+) {0,}\\(`;
+                // console.log(regexFunction);
+                let existsStructFunctions: Set<string> = new Set<string>();
+                for (let n = 0; n < editor.document.lineCount; n++) {
+                    let line = editor.document.lineAt(n);
+                    let matches = line.text.match(regexFunction);
+                    if (matches !== null) {
+                        console.log(matches[0], matches[1]);
+                        existsStructFunctions.add(matches[1]);
+                    }
                 }
-            });
+
+                const options = <vscode.QuickPickOptions>{ canPickMany: true, placeHolder: "select the fields that would be generator get set" };
+                var items: vscode.QuickPickItem[] = [];
+                var obj = {
+                    info: sinfo,
+                    exists: existsStructFunctions,
+                    items: function() {
+                        this.info.Fields.forEach( (value, key) => {
+                            if(this.exists.has(key)) {
+                                vscode.window.showInformationMessage("Get" + key + "or Set" + key + " is Exists");
+                            } else {
+                                items.push( <vscode.QuickPickItem> {
+                                    label:  value.toString(),
+                                    detail: this.info.Name,
+                                    description: key,
+                                });
+                            }
+                        });
+                    },
+    
+                    pick: function() {
+                        this.items();
+                        vscode.window.showQuickPick(items, options).then( (item) => {
+                            if(item) {
+                                console.log("123", item, this.info.Name);
+                            }
+                        });
+                    }
+                };
+    
+                obj.pick();
+            }
+
+            
+
+            // const pickThen = function (input: string | undefined) {
+            //     if (typeof (input) !== "string") {
+            //         var selections: string[] = input as any;
+            //         console.log(selections); // TODO: search exists function
+            //         selections.forEach((selection) => {
+            //             let infos = selection.match(`(\\d+)\\) ([^\\.]+)([^ ]+) (.+)`);
+            //             if (infos) {
+            //                 // console.log("infos", selection, infos);
+            //                 console.log("arguments", arguments, prototype);
+            //             }
+            //         });
+            //     }
+            // };
+
+
+        
+
+
+            // vscode.window.showQuickPick(sinfo.getFieldsString(), options).then( (input) => {
+            //     if(typeof(input) !== "string") {
+            //         var  selections: string[] = input as any;
+            //         console.log(selections); // TODO: search exists function
+
+            //         selections.forEach( (selection)=>{
+            //             let infos = selection.match(`(\\d+)\\) ([^\\.]+)([^ ]+) (.+)`);
+            //             if(infos) {
+            //                 console.log("infos",selection, infos);
+            //             }
+            //         });
+            //     }
+            // });
+
         }
     }));
 
@@ -107,7 +207,7 @@ function GetStruct(): StructInfo | undefined {
                                 open--;
                                 if (open === 0) {
                                     if (n >= selectline) {
-                                        let structName = matchs[1];  
+                                        let structName = matchs[1];
                                         return new StructInfo(structName, getStructField(editor, "", i, n), [i, n]);
                                     }
                                     break BREAK_OPEN;
@@ -132,7 +232,7 @@ function getStructField(editor: vscode.TextEditor, parent: string, startline: nu
     }
 
     parent += ".";
-    
+
     let regex = "([^ \t]+)[ \t]+([^ \\(\\{\t]+)";
     for (let i = startline + 1; i < endline; i++) {
         let textline = editor.document.lineAt(i);
@@ -142,50 +242,50 @@ function getStructField(editor: vscode.TextEditor, parent: string, startline: nu
             var end: number;
             let fieldName = matchArray[matchArray.length - 2];
             let fieldType = matchArray[matchArray.length - 1].trim();
-            
+
             switch (fieldType) {
                 case 'struct':
                     end = getFieldRange(editor, ['{', '}'], i, endline);
-                    if(i === end ) {
+                    if (i === end) {
                         // let matches = textline.text.match("struct {0,}\\{[^ \t]+\\}");
                         function getSingleStructRelationship(source: string, parent: string): Field | undefined {
                             let smatch = source.match("([^ \t]+)[^s]+struct {0,}\\{(.+)\\}");
-                            if(smatch !== null) {
-                                console.log(smatch[0],smatch[1],smatch[2]);
+                            if (smatch !== null) {
+                                console.log(smatch[0], smatch[1], smatch[2]);
                                 return getSingleStructRelationship(smatch[2], parent + "." + smatch[1]);
                             } else {
                                 smatch = source.match("([^ \t]+)[ \t]+(.+)");
-                                if(smatch !== null) {
-                                    return new Field(parent+".", smatch[2].trim(), smatch[1], [i, end]);
+                                if (smatch !== null) {
+                                    return new Field(parent + ".", smatch[2].trim(), smatch[1], [i, end]);
                                 }
                             }
                         }
 
                         let v = getSingleStructRelationship(textline.text, "");
-                        if(v !== undefined) {
+                        if (v !== undefined) {
                             result.push(v);
                         }
                     } else {
-                        result = result.concat(getStructField(editor, parent  + fieldName, i, end));
+                        result = result.concat(getStructField(editor, parent + fieldName, i, end));
                         i = end;
                     }
                     break;
                 case 'interface':
-                    result.push(new Field( parent, fieldType + "{}", fieldName, [i,i]));
+                    result.push(new Field(parent, fieldType + "{}", fieldName, [i, i]));
                     break;
                 case 'func':
                     end = getFieldRange(editor, ['(', ')'], i, endline);
-                    if(i === end) {
+                    if (i === end) {
                         let matches = textline.text.match("func\\(.+");
-                        if(matches !== null) {
-                            result.push(new Field( parent, matches[0].trim(), fieldName, [i, end]));
+                        if (matches !== null) {
+                            result.push(new Field(parent, matches[0].trim(), fieldName, [i, end]));
                         }
-                    }  else {
+                    } else {
                         i = end;
                     }
                     break;
                 default:
-                    result.push(new Field( parent, fieldType, fieldName, [i,i]));
+                    result.push(new Field(parent, fieldType, fieldName, [i, i]));
                     break;
             }
         }
