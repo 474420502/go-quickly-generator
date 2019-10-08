@@ -4,9 +4,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // Import the module and reference it with the alias vscode in your code below
 
 import * as vscode from 'vscode';
-import { resolve } from 'url';
-import { rejects } from 'assert';
-import { prototype } from 'events';
 
 class StructInfo {
     ShorthandName: string;
@@ -30,7 +27,7 @@ class StructInfo {
         this.Range = range;
 
         this.Fields = new Map<string, Field>();
-        fields.forEach((value)=>{
+        fields.forEach((value) => {
             this.Fields.set(value.Key, value);
         });
     }
@@ -58,7 +55,9 @@ class Field {
         this.Type = type;
         this.Name = name;
         this.Range = range;
-        this.Key = (this.Parent.substr(1) + this.Name).replace(".", "");
+        
+        this.Key = (this.Parent.substr(1) + this.Name[0].toUpperCase() + this.Name.substr(1)).replace(new RegExp("\\.", "g"), "");
+        // TODO: 大小写Map的问题
     }
 
     toString(): string {
@@ -72,94 +71,15 @@ function activate(context: vscode.ExtensionContext) {
     // Use the console to output diagnostic information (console.log) and errors (console.error)
     // This line of code will only be executed once when your extension is activated
     console.log('Congratulations, your extension "go-quickly-generator" is now active!');
-    context.subscriptions.push(vscode.commands.registerCommand('go-quickly-generator.go-gen-set', () => {
+ 
+    context.subscriptions.push(vscode.commands.registerCommand('Go-Quickly-Generator.Go-Gen-GetSet', () => {
         // The code you place here will be executed every time your command is executed
         // Display a message box to the user
         let sinfo = GetStruct();
-        if (sinfo) {
-            console.log(sinfo);
-
-            let editor = vscode.window.activeTextEditor;
-            if (editor !== undefined) {
-
-                let regexFunction = `func {0,}\\(.+${sinfo.Name} {0,}\\) {0,}[GS]et([a-zA-Z_]+) {0,}\\(`;
-                // console.log(regexFunction);
-                let existsStructFunctions: Set<string> = new Set<string>();
-                for (let n = 0; n < editor.document.lineCount; n++) {
-                    let line = editor.document.lineAt(n);
-                    let matches = line.text.match(regexFunction);
-                    if (matches !== null) {
-                        console.log(matches[0], matches[1]);
-                        existsStructFunctions.add(matches[1]);
-                    }
-                }
-
-                const options = <vscode.QuickPickOptions>{ canPickMany: true, placeHolder: "select the fields that would be generator get set" };
-                var items: vscode.QuickPickItem[] = [];
-                var obj = {
-                    info: sinfo,
-                    exists: existsStructFunctions,
-                    items: function() {
-                        this.info.Fields.forEach( (value, key) => {
-                            if(this.exists.has(key)) {
-                                vscode.window.showInformationMessage("Get" + key + "or Set" + key + " is Exists");
-                            } else {
-                                items.push( <vscode.QuickPickItem> {
-                                    label:  value.toString(),
-                                    detail: this.info.Name,
-                                    description: key,
-                                });
-                            }
-                        });
-                    },
-    
-                    pick: function() {
-                        this.items();
-                        vscode.window.showQuickPick(items, options).then( (item) => {
-                            if(item) {
-                                console.log("123", item, this.info.Name);
-                            }
-                        });
-                    }
-                };
-    
-                obj.pick();
-            }
-
-            
-
-            // const pickThen = function (input: string | undefined) {
-            //     if (typeof (input) !== "string") {
-            //         var selections: string[] = input as any;
-            //         console.log(selections); // TODO: search exists function
-            //         selections.forEach((selection) => {
-            //             let infos = selection.match(`(\\d+)\\) ([^\\.]+)([^ ]+) (.+)`);
-            //             if (infos) {
-            //                 // console.log("infos", selection, infos);
-            //                 console.log("arguments", arguments, prototype);
-            //             }
-            //         });
-            //     }
-            // };
-
-
-        
-
-
-            // vscode.window.showQuickPick(sinfo.getFieldsString(), options).then( (input) => {
-            //     if(typeof(input) !== "string") {
-            //         var  selections: string[] = input as any;
-            //         console.log(selections); // TODO: search exists function
-
-            //         selections.forEach( (selection)=>{
-            //             let infos = selection.match(`(\\d+)\\) ([^\\.]+)([^ ]+) (.+)`);
-            //             if(infos) {
-            //                 console.log("infos",selection, infos);
-            //             }
-            //         });
-            //     }
-            // });
-
+        if(sinfo) {
+            GeneratorSetGet(sinfo);
+        } else {
+            vscode.window.showErrorMessage("there is no struct(go) to focus. you can move point to struct(go)");
         }
     }));
 
@@ -177,6 +97,101 @@ function activate(context: vscode.ExtensionContext) {
     }));
 }
 
+function getAbbreviation(name: string): string | undefined {
+    if (name.length) {
+        let shortName = name[0].toLowerCase();
+        let m = name.substr(1).match("[A-Z]");
+        if (m) {
+            m.forEach((v) => {
+                shortName += v.toLowerCase();
+            });
+            return shortName;
+        }
+    }
+    return undefined;
+}
+
+function GeneratorSetGet(sinfo: StructInfo) {
+
+        console.log(sinfo);
+
+        let editor = vscode.window.activeTextEditor;
+        if (editor !== undefined) {
+
+            let regexFunction = `func {0,}\\(.+${sinfo.Name} {0,}\\) {0,}[GS]et([a-zA-Z_]+) {0,}\\(`;
+            // console.log(regexFunction);
+            let existsStructFunctions: Set<string> = new Set<string>();
+            for (let n = 0; n < editor.document.lineCount; n++) {
+                let line = editor.document.lineAt(n);
+                let matches = line.text.match(regexFunction);
+                if (matches !== null) {
+                    // console.log(matches[0], matches[1]);
+                    existsStructFunctions.add(matches[1]);
+                }
+            }
+
+            const options = <vscode.QuickPickOptions>{ canPickMany: true, placeHolder: "select the fields that would be generator get set" };
+            var items: vscode.QuickPickItem[] = [];
+            var obj = {
+                info: sinfo,
+                exists: existsStructFunctions,
+                items: function () {
+                    this.info.Fields.forEach((value, key) => {
+                        if (this.exists.has(key)) {
+                            vscode.window.showInformationMessage("Get" + key + " or Set" + key + " is Exists");
+                        } else {
+                            items.push(<vscode.QuickPickItem>{
+                                label: value.toString(),
+                                detail: this.info.Name,
+                                description: key,
+                            });
+                        }
+                    });
+                },
+
+                pick: function () {
+                    this.items();
+                    vscode.window.showQuickPick(items, options).then((item) => {
+                        if (item) {
+                            let fields = item as any as vscode.QuickPickItem[];
+                            let sname = getAbbreviation(this.info.Name) as string;
+                            let structString = `func (${sname} *${this.info.Name})`;
+
+                            fields.forEach((qitem) => {
+                                let field = this.info.Fields.get(qitem.description as string);
+                                if (field) {
+  
+                                    let editor = vscode.window.activeTextEditor;
+                                    if (editor) {
+
+                                        let keyName = field.Name[0].toUpperCase() + field.Name.substr(1);
+                                        let funcitonName = field.Parent.replace( new RegExp("\\.", "g"), "") + keyName ;
+
+                                        // Set
+                                        let prefix = "Set";
+                                        let setFunction = prefix + funcitonName ;
+                                        let params = `(${field.Name} ${field.Type})`;
+                                        let comment = `// ${setFunction} ${prefix} ${field.Name} ${field.Type}\n`;
+                                        let ss = new vscode.SnippetString(`\n${comment}${structString} ${setFunction}${params} {\n\t${sname}${field.Parent}${field.Name} = ${field.Name}\n}\n`);
+                                        editor.insertSnippet(ss, new vscode.Position(this.info.Range[1] + 1, 0));
+
+                                        prefix = "Get";
+                                        let getFunction = prefix + funcitonName ;
+                                        comment = `// ${getFunction} ${prefix} return ${field.Name} ${field.Type}\n`;
+                                        ss = new vscode.SnippetString(`\n${comment}${structString} ${getFunction}() ${field.Type} {\n\treturn ${sname}${field.Parent}${field.Name}\n}\n`);
+                                        editor.insertSnippet(ss, new vscode.Position(this.info.Range[1] + 1, 0)); 
+            
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+            };
+
+            obj.pick();
+        }
+}
 
 function GetStruct(): StructInfo | undefined {
     let editor = vscode.window.activeTextEditor;
@@ -251,7 +266,7 @@ function getStructField(editor: vscode.TextEditor, parent: string, startline: nu
                         function getSingleStructRelationship(source: string, parent: string): Field | undefined {
                             let smatch = source.match("([^ \t]+)[^s]+struct {0,}\\{(.+)\\}");
                             if (smatch !== null) {
-                                console.log(smatch[0], smatch[1], smatch[2]);
+                                // console.log(smatch[0], smatch[1], smatch[2]);
                                 return getSingleStructRelationship(smatch[2], parent + "." + smatch[1]);
                             } else {
                                 smatch = source.match("([^ \t]+)[ \t]+(.+)");

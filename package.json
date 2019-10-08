@@ -11,9 +11,7 @@
 	],
 	"activationEvents": [
 		"onLanguage:go",
-		"onCommand:go-quickly-generator.helloWorld",
-		"onCommand:go-quickly-generator.go-gen-set",
-		"onCommand:go-quickly-generator.allGetterAndSetter"
+		"onCommand:Go-Quickly-Generator.Go-Gen-GetSet"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -30,21 +28,20 @@
 		],
 		"commands": [
 			{
-				"command": "go-quickly-generator.helloWorld",
-				"title": "Hello World",
-				"category": "go-quickly-generator"
-			},
-			{
-				"command": "go-quickly-generator.go-gen-set",
-				"title": "gen get set",
-				"category": "go-quickly-generator"
-			},
-			{
-				"command": "go-quickly-generator.allGetterAndSetter",
-				"title": "allGetterAndSetter",
+				"command": "Go-Quickly-Generator.Go-Gen-GetSet",
+				"title": "Generator Get Set",
 				"category": "go-quickly-generator"
 			}
-		]
+		],
+		"menus": {
+			"editor/context": [
+				{
+					"when": "editorTextFocus && resourceLangId == go",
+					"command": "Go-Quickly-Generator.Go-Gen-GetSet",
+					"group": "GoQuickly@1"
+				}
+			]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
@@ -64,8 +61,5 @@
 		"tslint": "^5.12.1",
 		"vscode-test": "^1.2.0"
 	},
-	"dependencies": {
-		
-	}
-
+	"dependencies": {}
 }
