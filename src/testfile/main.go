@@ -61,6 +61,7 @@ func (es *ExStruct) SetChildStructBoy(boy int) {
 // GetChildStructGirl Get return girl string
 func (es *ExStruct) GetChildStructGirl() string {
 	return es.ChildStruct.girl
+
 }
 
 // SetChildStructGirl Set girl string

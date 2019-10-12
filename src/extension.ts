@@ -4,6 +4,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // Import the module and reference it with the alias vscode in your code below
 
 import * as vscode from 'vscode';
+import { Provider } from './codeAction';
 
 class StructInfo {
     ShorthandName: string;
@@ -65,6 +66,9 @@ class Field {
     }
 }
 
+let typeMap = new Map<string, GeneratorType>() ;
+let typeCharMap = new Map<GeneratorType, string>() ;
+
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 function activate(context: vscode.ExtensionContext) {
@@ -72,20 +76,46 @@ function activate(context: vscode.ExtensionContext) {
     // This line of code will only be executed once when your extension is activated
     console.log('Congratulations, your extension "go-quickly-generator" is now active!');
  
+    
+    typeMap.set("Getter",  GeneratorType.Getter);
+    typeMap.set("Setter",  GeneratorType.Setter);
+    typeCharMap.set(GeneratorType.Getter, "G");
+    typeCharMap.set(GeneratorType.Setter, "S");
+    typeCharMap.set(GeneratorType.Getter | GeneratorType.Setter, "GS");
+    
+
     context.subscriptions.push(vscode.commands.registerCommand('Go-Quickly-Generator.Go-Gen-GetSet', () => {
         // The code you place here will be executed every time your command is executed
         // Display a message box to the user
         let sinfo = GetStruct();
         if(sinfo) {
-            GeneratorSetGet(sinfo);
+           
+            vscode.window.showQuickPick(["Getter", "Setter"], <vscode.QuickPickOptions>{canPickMany: true, placeHolder: "select generator type getter or setter"}).then( items => {
+                console.log(items);
+                let myitems = items as any as string[];
+                let t = GeneratorType.Unknown;
+                myitems.forEach((value)=>{
+                    let sel = typeMap.get(value);
+                    if(sel) {
+                        t = t | sel;
+                    }
+                });
+                if(sinfo) {
+                    GeneratorSetGet(sinfo, t);
+                }
+            });
+            // GeneratorSetGet(sinfo, GeneratorType.Getter | GeneratorType.Setter);
         } else {
             vscode.window.showErrorMessage("there is no struct(go) to focus. you can move point to struct(go)");
         }
     }));
 
+    // context.subscriptions.push(vscode.languages.registerCodeActionsProvider(
+    //     "go", new Provider(), { providedCodeActionKinds: [vscode.CodeActionKind.Source] }
+    // ));
 
 
-    context.subscriptions.push(vscode.commands.registerCommand('go-quickly-generator.allGetterAndSetter', function () {
+    context.subscriptions.push(vscode.commands.registerCommand('Go-Quickly-Generator.Getter', function () {
         let editor = vscode.window.activeTextEditor;
         if (editor !== undefined) {
             const currentPos = editor.selection.active;
@@ -111,21 +141,27 @@ function getAbbreviation(name: string): string | undefined {
     return undefined;
 }
 
-function GeneratorSetGet(sinfo: StructInfo) {
+enum GeneratorType {
+    Unknown = 0 ,
+    Setter  = 1 << 0,
+    Getter  = 1 << 1,
+}
+
+function GeneratorSetGet(sinfo: StructInfo, stype: GeneratorType) {
 
         console.log(sinfo);
 
         let editor = vscode.window.activeTextEditor;
         if (editor !== undefined) {
 
-            let regexFunction = `func {0,}\\(.+${sinfo.Name} {0,}\\) {0,}[GS]et([a-zA-Z_]+) {0,}\\(`;
+            let gtypechar = typeCharMap.get(stype) as string;
+            let regexFunction = `^func {0,}\\(.+${sinfo.Name} {0,}\\) {0,}[${gtypechar}]et([a-zA-Z_]+) {0,}\\(`;
             // console.log(regexFunction);
             let existsStructFunctions: Set<string> = new Set<string>();
             for (let n = 0; n < editor.document.lineCount; n++) {
                 let line = editor.document.lineAt(n);
                 let matches = line.text.match(regexFunction);
                 if (matches !== null) {
-                    // console.log(matches[0], matches[1]);
                     existsStructFunctions.add(matches[1]);
                 }
             }
@@ -168,19 +204,22 @@ function GeneratorSetGet(sinfo: StructInfo) {
                                         let funcitonName = field.Parent.replace( new RegExp("\\.", "g"), "") + keyName ;
 
                                         // Set
-                                        let prefix = "Set";
-                                        let setFunction = prefix + funcitonName ;
-                                        let params = `(${field.Name} ${field.Type})`;
-                                        let comment = `// ${setFunction} ${prefix} ${field.Name} ${field.Type}\n`;
-                                        let ss = new vscode.SnippetString(`\n${comment}${structString} ${setFunction}${params} {\n\t${sname}${field.Parent}${field.Name} = ${field.Name}\n}\n`);
-                                        editor.insertSnippet(ss, new vscode.Position(this.info.Range[1] + 1, 0));
+                                        if(stype & GeneratorType.Setter) {
+                                            let prefix = "Set";
+                                            let setFunction = prefix + funcitonName ;
+                                            let params = `(${field.Name} ${field.Type})`;
+                                            let comment = `// ${setFunction} ${prefix} ${field.Name} ${field.Type}\n`;
+                                            let ss = new vscode.SnippetString(`\n${comment}${structString} ${setFunction}${params} {\n\t${sname}${field.Parent}${field.Name} = ${field.Name}\n}\n`);
+                                            editor.insertSnippet(ss, new vscode.Position(this.info.Range[1] + 1, 0));
+                                        }
 
-                                        prefix = "Get";
-                                        let getFunction = prefix + funcitonName ;
-                                        comment = `// ${getFunction} ${prefix} return ${field.Name} ${field.Type}\n`;
-                                        ss = new vscode.SnippetString(`\n${comment}${structString} ${getFunction}() ${field.Type} {\n\treturn ${sname}${field.Parent}${field.Name}\n}\n`);
-                                        editor.insertSnippet(ss, new vscode.Position(this.info.Range[1] + 1, 0)); 
-            
+                                        if(stype & GeneratorType.Getter) {
+                                            let prefix = "Get";
+                                            let getFunction = prefix + funcitonName ;
+                                            let comment = `// ${getFunction} ${prefix} return ${field.Name} ${field.Type}\n`;
+                                            let ss = new vscode.SnippetString(`\n${comment}${structString} ${getFunction}() ${field.Type} {\n\treturn ${sname}${field.Parent}${field.Name}\n}\n`);
+                                            editor.insertSnippet(ss, new vscode.Position(this.info.Range[1] + 1, 0)); 
+                                        }
                                     }
                                 }
                             });
