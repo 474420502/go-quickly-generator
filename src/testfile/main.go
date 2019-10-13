@@ -25,6 +25,26 @@ type MyStruct2 struct {
 	S struct{ A struct{ C interface{} } }
 }
 
+// SetSAC Set C interface{}
+func (ms *MyStruct2) SetSAC(C interface{}) {
+	ms.S.A.C = C
+}
+
+// GetKey Get return Key string
+func (ms *MyStruct2) GetKey() string {
+	return ms.Key
+}
+
+// SetKey Set Key string
+func (ms *MyStruct2) SetKey(Key string) {
+	ms.Key = Key
+}
+
+// GetValue Get return Value int
+func (ms *MyStruct2) GetValue() int {
+	return ms.Value
+}
+
 // DoFunc 非常丑陋
 func DoFunc(a func(
 	a int,

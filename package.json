@@ -26,6 +26,17 @@
 				]
 			}
 		],
+		"colors": [
+			{
+				"id": "QuicklyGenerator.StructSelected",
+				"description": "Background decoration color for large numbers",
+				"defaults": {
+					"dark": "#3bcf1655",
+					"light": "#d45b0a55",
+					"highContrast": "#9806db55"
+				}
+			}
+		],
 		"commands": [
 			{
 				"command": "Go-Quickly-Generator.Go-Gen-GetSet",
