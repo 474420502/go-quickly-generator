@@ -94,31 +94,31 @@ function activate(context: vscode.ExtensionContext) {
         let editor = vscode.window.activeTextEditor;
         if (sinfo && editor) {
 
-                let decoration = <vscode.DecorationOptions>{ range: new vscode.Range(sinfo.Range[0], 0, sinfo.Range[1]  + 1, 0) };
-                editor.setDecorations(dtype, [decoration]);
+            let decoration = <vscode.DecorationOptions>{ range: new vscode.Range(sinfo.Range[0], 0, sinfo.Range[1] + 1, 0) };
+            editor.setDecorations(dtype, [decoration]);
 
-                vscode.window.showQuickPick(["Getter", "Setter"], <vscode.QuickPickOptions>{ canPickMany: true, placeHolder: "select generator type getter or setter" }).then(items => {
-                    console.log(items);
+            vscode.window.showQuickPick(["Getter", "Setter"], <vscode.QuickPickOptions>{ canPickMany: true, placeHolder: "select generator type getter or setter" }).then(items => {
+                console.log(items);
 
-                    if(items) {
-                        let myitems = items as any as string[];
-                        let gtype = GeneratorType.Unknown;
-                        myitems.forEach((value) => {
-                            let sel = typeMap.get(value);
-                            if (sel) {
-                                gtype = gtype | sel;
-                            }
-                        });
-                        if (sinfo) {
-                            GeneratorSetGet(sinfo, gtype);
+                if (items) {
+                    let myitems = items as any as string[];
+                    let gtype = GeneratorType.Unknown;
+                    myitems.forEach((value) => {
+                        let sel = typeMap.get(value);
+                        if (sel) {
+                            gtype = gtype | sel;
                         }
+                    });
+                    if (sinfo) {
+                        GeneratorSetGet(sinfo, gtype);
                     }
+                }
 
-                    let editor = vscode.window.activeTextEditor;
-                    if(editor) {
-                        editor.setDecorations(dtype, []);
-                    }
-                });
+                let editor = vscode.window.activeTextEditor;
+                if (editor) {
+                    editor.setDecorations(dtype, []);
+                }
+            });
         } else {
             vscode.window.showErrorMessage("there is no struct(go) to focus. you can move point to struct(go)");
         }
@@ -173,10 +173,12 @@ function GeneratorSetGet(sinfo: StructInfo, stype: GeneratorType) {
 
         const options = <vscode.QuickPickOptions>{ canPickMany: true, placeHolder: "select the fields that would be generator get set" };
         var items: vscode.QuickPickItem[] = [];
+
         var obj = {
             info: sinfo,
             exists: existsStructFunctions,
-            items: function () {
+
+            fields2items: function () {
                 this.info.Fields.forEach((value, key) => {
                     if (this.exists.has(key)) {
                         vscode.window.showInformationMessage("Get" + key + " or Set" + key + " is Exists");
@@ -191,45 +193,47 @@ function GeneratorSetGet(sinfo: StructInfo, stype: GeneratorType) {
             },
 
             pick: function () {
-                this.items();
-                vscode.window.showQuickPick(items, options).then((item) => {
-                    if (item) {
-                        let fields = item as any as vscode.QuickPickItem[];
-                        let sname = getAbbreviation(this.info.Name) as string;
-                        let structString = `func (${sname} *${this.info.Name})`;
+                this.fields2items();
+                if (items.length) {
+                    vscode.window.showQuickPick(items, options).then((item) => {
+                        if (item) {
+                            let fields = item as any as vscode.QuickPickItem[];
+                            let sname = getAbbreviation(this.info.Name) as string;
+                            let structString = `func (${sname} *${this.info.Name})`;
 
-                        fields.forEach((qitem) => {
-                            let field = this.info.Fields.get(qitem.description as string);
-                            if (field) {
+                            fields.forEach((qitem) => {
+                                let field = this.info.Fields.get(qitem.description as string);
+                                if (field) {
 
-                                let editor = vscode.window.activeTextEditor;
-                                if (editor) {
+                                    let editor = vscode.window.activeTextEditor;
+                                    if (editor) {
 
-                                    let keyName = field.Name[0].toUpperCase() + field.Name.substr(1);
-                                    let funcitonName = field.Parent.replace(new RegExp("\\.", "g"), "") + keyName;
+                                        let keyName = field.Name[0].toUpperCase() + field.Name.substr(1);
+                                        let funcitonName = field.Parent.replace(new RegExp("\\.", "g"), "") + keyName;
 
-                                    // Set
-                                    if (stype & GeneratorType.Setter) {
-                                        let prefix = "Set";
-                                        let setFunction = prefix + funcitonName;
-                                        let params = `(${field.Name} ${field.Type})`;
-                                        let comment = `// ${setFunction} ${prefix} ${field.Name} ${field.Type}\n`;
-                                        let ss = new vscode.SnippetString(`\n${comment}${structString} ${setFunction}${params} {\n\t${sname}${field.Parent}${field.Name} = ${field.Name}\n}\n`);
-                                        editor.insertSnippet(ss, new vscode.Position(this.info.Range[1] + 1, 0));
-                                    }
+                                        // Set
+                                        if (stype & GeneratorType.Setter) {
+                                            let prefix = "Set";
+                                            let setFunction = prefix + funcitonName;
+                                            let params = `(${field.Name} ${field.Type})`;
+                                            let comment = `// ${setFunction} ${prefix} ${field.Name} ${field.Type}\n`;
+                                            let ss = new vscode.SnippetString(`\n${comment}${structString} ${setFunction}${params} {\n\t${sname}${field.Parent}${field.Name} = ${field.Name}\n}\n`);
+                                            editor.insertSnippet(ss, new vscode.Position(this.info.Range[1] + 1, 0));
+                                        }
 
-                                    if (stype & GeneratorType.Getter) {
-                                        let prefix = "Get";
-                                        let getFunction = prefix + funcitonName;
-                                        let comment = `// ${getFunction} ${prefix} return ${field.Name} ${field.Type}\n`;
-                                        let ss = new vscode.SnippetString(`\n${comment}${structString} ${getFunction}() ${field.Type} {\n\treturn ${sname}${field.Parent}${field.Name}\n}\n`);
-                                        editor.insertSnippet(ss, new vscode.Position(this.info.Range[1] + 1, 0));
+                                        if (stype & GeneratorType.Getter) {
+                                            let prefix = "Get";
+                                            let getFunction = prefix + funcitonName;
+                                            let comment = `// ${getFunction} ${prefix} return ${field.Name} ${field.Type}\n`;
+                                            let ss = new vscode.SnippetString(`\n${comment}${structString} ${getFunction}() ${field.Type} {\n\treturn ${sname}${field.Parent}${field.Name}\n}\n`);
+                                            editor.insertSnippet(ss, new vscode.Position(this.info.Range[1] + 1, 0));
+                                        }
                                     }
                                 }
-                            }
-                        });
-                    }
-                });
+                            });
+                        }
+                    });
+                }
             }
         };
 
@@ -245,11 +249,9 @@ function GetStruct(): StructInfo | undefined {
             return;
         }
         let selection = editor.selection;
-        // vscode.window.showInformationMessage( editor.document.version.toString() );
-        // vscode.window.showInformationMessage( text );
         let selectline = selection.active.line;
         let regex = "type +([^ ]+) +struct";
-        // lineText.text.match()
+
         for (let i = selectline; i >= 0; i--) {
             let lineText = editor.document.lineAt(i);
             let matchs = lineText.text.match(regex);
@@ -384,5 +386,7 @@ function getFieldRange(editor: vscode.TextEditor, pair: string[], startline: num
 // export function getStruct(editor: vscode.TextEditor) {
 // }
 // this method is called when your extension is deactivated
-function deactivate() { }
+function deactivate() { 
+
+}
 exports.deactivate = deactivate;
