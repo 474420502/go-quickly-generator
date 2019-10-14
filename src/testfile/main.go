@@ -55,7 +55,7 @@ func DoFunc(a func(
 	return
 }
 
-// ExStruct 升级
+// ExStruct my struct
 type ExStruct struct {
 	ChildStruct struct {
 		age    int

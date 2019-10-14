@@ -3,6 +3,7 @@
 	"displayName": "go-quickly-generator",
 	"description": "create code quickly",
 	"version": "1.0.0",
+	"publisher": "474420502",
 	"engines": {
 		"vscode": "^1.38.0"
 	},

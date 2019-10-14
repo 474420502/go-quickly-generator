@@ -120,7 +120,7 @@ function activate(context: vscode.ExtensionContext) {
                 }
             });
         } else {
-            vscode.window.showErrorMessage("there is no struct(go) to focus. you can move point to struct(go)");
+            vscode.window.showErrorMessage("there is no struct(go) to focus. please move cursor in the code of struct.");
         }
 
     }));
