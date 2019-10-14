@@ -2,4 +2,4 @@
 
 the extension is easy to generate getter or setter .
 
-![example](example.webp)
+![example](https://github.com/474420502/go-quickly-generator/blob/master/example.webp)

@@ -73,5 +73,14 @@
 		"tslint": "^5.12.1",
 		"vscode-test": "^1.2.0"
 	},
-	"dependencies": {}
+	"dependencies": {},
+	"license": "MIT",
+	"author": "474420502",
+	"repository": {
+	  "type": "git",
+	  "url": "https://github.com/474420502/go-quickly-generator.git"
+	},
+	"bugs": {
+	  "url": "https://github.com/474420502/go-quickly-generator/issues"
+	}
 }
