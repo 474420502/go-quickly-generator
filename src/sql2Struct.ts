@@ -2,6 +2,34 @@ import * as vscode from 'vscode';
 import { StructInfo, Field, GeneratorType } from './base';
 import { GetPatternRange } from './utils';
 
+const typeMap = new Map<string, string>();
+
+typeMap.set("tinyint", "NullInt32")
+typeMap.set("smallint", "NullInt32")
+typeMap.set("mediumint", "NullInt32")
+typeMap.set("int", "NullInt32")
+typeMap.set("bigint", "NullInt64")
+
+typeMap.set("bit", "NullInt32")
+typeMap.set("bool", "NullBool")
+
+typeMap.set("float", "NullFloat64")
+typeMap.set("double", "NullFloat64")
+typeMap.set("decimal", "NullFloat64")
+
+typeMap.set("char", "NullString")
+typeMap.set("varchar", "NullString")
+typeMap.set("tinytext", "NullString")
+typeMap.set("text", "NullString")
+typeMap.set("mediumtext", "NullString")
+
+
+typeMap.set("date", "NullTime")
+typeMap.set("time", "NullTime")
+typeMap.set("datetime", "NullTime")
+typeMap.set("timestamp", "NullTime")
+
+
 function commandSQL2Struct() {
     GetTableStruct();
 }

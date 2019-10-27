@@ -1,5 +1,7 @@
 package main
 
+import "database/sql"
+
 // MyStruct 介绍
 type MyStruct struct {
 	Value int
@@ -95,28 +97,16 @@ CREATE TABLE `pay` (
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='支付订单表';
 */
 
-type Pay struct {
-	Id             bigint  // '主键，支付单id，支付单流水号（有规则）'
-	MId            bigint  // '签约商家id'
-	MPaylineId     bigint  // '商家支付业务线id'
-	OutTradeNo     varchar // '商家业务线订单号'
-	PayMId         bigint  // '支付方式ID'
-	PayMCode       varchar // '支付方式编码'
-	PayMName       varchar // '支付方式名称'
-	NotifyTs       int     // '最新通知时间，Unix秒'
-	StatusTs       int     // '状态变更时间，Unix秒'
-	CreateTs       int     // '创建时间，Unix秒'
-	UpdateTs       int     // '修改时间，Unix秒'
-	FinishTs       int     // '支付完成时间（支付中心），Unix秒'
-	PayingTs       int     // '支付中时间，Unix秒'
-	PayableAmount  bigint  // '应付金额，精确到分'
-	DiscountAmount bigint  // '支付中心优惠金额，精确到分'
-	PayAmount      bigint  // '支付中心实付金额，精确到分'
-}
-
 func main() {
 	a := ExStruct{}
 	b := MyStruct{}
 	c := MyStruct2{}
 	println(a, b, c)
+
+	db, err := sql.Open("12", "sd")
+	if err != nil {
+		panic(err)
+	}
+	rows, _ := db.Query("")
+	defer rows.Close()
 }

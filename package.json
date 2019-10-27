@@ -49,8 +49,6 @@
 				"title": "Go: SQL to Struct",
 				"category": "go-quickly-generator"
 			}
-
-			
 		],
 		"menus": {
 			"editor/context": [
@@ -58,13 +56,11 @@
 					"when": "editorTextFocus && resourceLangId == go",
 					"command": "Go-Quickly-Generator.Go-Gen-GetSet",
 					"group": "GoQuickly@1"
-				}, 
+				},
 				{
-					
 					"when": "editorTextFocus && resourceLangId == go",
 					"command": "Go-Quickly-Generator.Go-Gen-SQL2Struct",
 					"group": "GoQuickly@1"
-					
 				}
 			]
 		}
@@ -87,14 +83,16 @@
 		"tslint": "^5.12.1",
 		"vscode-test": "^1.2.0"
 	},
-	"dependencies": {},
+	"dependencies": {
+		"npm": "^6.12.0"
+	},
 	"license": "MIT",
 	"author": "474420502",
 	"repository": {
-	  "type": "git",
-	  "url": "https://github.com/474420502/go-quickly-generator.git"
+		"type": "git",
+		"url": "https://github.com/474420502/go-quickly-generator.git"
 	},
 	"bugs": {
-	  "url": "https://github.com/474420502/go-quickly-generator/issues"
+		"url": "https://github.com/474420502/go-quickly-generator/issues"
 	}
 }
