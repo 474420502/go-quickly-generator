@@ -1,4 +1,4 @@
-
+import * as vscode from 'vscode';
 
 enum GeneratorType {
     Unknown = 0,
@@ -64,5 +64,10 @@ class Field {
     }
 }
 
+const SelectedDecorationType = vscode.window.createTextEditorDecorationType({
+    cursor: 'crosshair',
+    backgroundColor: { id: 'QuicklyGenerator.StructSelected' }
+});
 
-export { StructInfo, Field , GeneratorType};
+
+export { StructInfo, Field , GeneratorType, SelectedDecorationType};

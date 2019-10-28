@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { StructInfo, Field, GeneratorType } from './base';
+import { SelectedDecorationType } from './base';
 import { GetPatternRange } from './utils';
 
 const typeMap = new Map<string, string[]>();
@@ -8,6 +8,7 @@ typeMap.set("tinyint", ["NullInt32", "int8", "uint8"]);
 typeMap.set("smallint", ["NullInt32", "int16", "uint16"]);
 typeMap.set("mediumint", ["NullInt32", "int32", "uint32"]);
 typeMap.set("int", ["NullInt32", "int32", "uint32"]);
+typeMap.set("integer", ["NullInt32", "int32", "uint32"]);
 typeMap.set("bigint", ["NullInt64", "int64", "uint64"]);
 
 typeMap.set("bit", ["NullInt32", "int32", "uint32"]);
@@ -17,19 +18,28 @@ typeMap.set("bool", ["NullBool", "bool", "bool"]);
 typeMap.set("float", ["NullFloat64", "float64", "float64"]);
 typeMap.set("double", ["NullFloat64", "float64", "float64"]);
 typeMap.set("decimal", ["NullFloat64", "float64", "float64"]);
+typeMap.set("numeric", ["NullFloat64", "float64", "float64"]);
+
 
 typeMap.set("char", ["NullString", "string", "string"]);
 typeMap.set("varchar", ["NullString", "string", "string"]);
 typeMap.set("tinytext", ["NullString", "string", "string"]);
 typeMap.set("text", ["NullString", "string", "string"]);
 typeMap.set("mediumtext", ["NullString", "string", "string"]);
+typeMap.set("longtext", ["NullString", "string", "string"]);
+
+typeMap.set("binary", ["RawBytes", "[]byte", "[]byte"]);
+typeMap.set("varbinary", ["RawBytes", "[]byte", "[]byte"]);
+typeMap.set("tinyblob", ["RawBytes", "[]byte", "[]byte"]);
+typeMap.set("blob", ["RawBytes", "[]byte", "[]byte"]);
+typeMap.set("mediumblob", ["RawBytes", "[]byte", "[]byte"]);
+typeMap.set("longblob", ["RawBytes", "[]byt", "[]byt"]);
 
 
 typeMap.set("date", ["NullTime", "time.Time", "time.Time"]);
 typeMap.set("time", ["NullTime", "time.Time", "time.Time"]);
 typeMap.set("datetime", ["NullTime", "time.Time", "time.Time"]);
 typeMap.set("timestamp", ["NullTime", "time.Time", "time.Time"]);
-
 
 function commandSQL2Struct() {
     GetTableStruct();
@@ -75,6 +85,8 @@ function GetTableStruct() {
             let startline = result[1] as number;
             let endline = result[2] as number;
 
+            
+
             if(gname) {
 
                 let sqlfields: SQLField[] = [];
@@ -91,7 +103,6 @@ function GetTableStruct() {
                             if(comment[comment.length - 1] === ',') {
                                 comment = comment.substring(0, comment.length - 1);
                             }
-
 
                             var IsNotNull:boolean = false;
                             var IsUnsigned: boolean = false;
@@ -140,6 +151,7 @@ function GetTableStruct() {
                 console.log(sqlfields);
                 console.log(structstring);
 
+
                 let ss = new vscode.SnippetString(structstring);
                 for(let n = endline;n < editor.document.lineCount; n++) {
                     if(editor.document.lineAt(n).text === "") {
@@ -148,6 +160,8 @@ function GetTableStruct() {
                         break;
                     }
                 }  
+
+                editor.selection = new vscode.Selection(startline, 0, endline, 0);
             }
         }
     }

@@ -2,16 +2,13 @@
 
 import * as vscode from 'vscode';
 import { Provider } from './codeAction';
-import { StructInfo, Field, GeneratorType } from './base';
+import { StructInfo, Field, GeneratorType, SelectedDecorationType} from './base';
 import { GetPatternRange } from './utils';
 
 let typeMap = new Map<string, GeneratorType>();
 let typeCharMap = new Map<GeneratorType, string>();
 
-const dtype = vscode.window.createTextEditorDecorationType({
-    cursor: 'crosshair',
-    backgroundColor: { id: 'QuicklyGenerator.StructSelected' }
-});
+
 
 typeMap.set("Getter", GeneratorType.Getter);
 typeMap.set("Setter", GeneratorType.Setter);
@@ -28,7 +25,7 @@ function commandSetterGetter() {
     if (sinfo && editor) {
 
         let decoration = <vscode.DecorationOptions>{ range: new vscode.Range(sinfo.Range[0], 0, sinfo.Range[1] + 1, 0) };
-        editor.setDecorations(dtype, [decoration]);
+        editor.setDecorations(SelectedDecorationType, [decoration]);
 
         vscode.window.showQuickPick(["Getter", "Setter"], <vscode.QuickPickOptions>{ canPickMany: true, placeHolder: "select generator type getter or setter" }).then(items => {
             console.log(items);
@@ -49,7 +46,7 @@ function commandSetterGetter() {
 
             let editor = vscode.window.activeTextEditor;
             if (editor) {
-                editor.setDecorations(dtype, []);
+                editor.setDecorations(SelectedDecorationType, []);
             }
         });
     } else {
