@@ -4,6 +4,12 @@ All notable changes to the "go-quickly-generator" extension will be documented i
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.1.1] - 2019-10-28
+
+### Added
+
+- add example image
+
 ## [1.1.0] - 2019-10-28
 
 ### Added
