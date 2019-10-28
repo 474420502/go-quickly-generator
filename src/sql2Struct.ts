@@ -2,32 +2,33 @@ import * as vscode from 'vscode';
 import { StructInfo, Field, GeneratorType } from './base';
 import { GetPatternRange } from './utils';
 
-const typeMap = new Map<string, string>();
+const typeMap = new Map<string, string[]>();
 
-typeMap.set("tinyint", "NullInt32")
-typeMap.set("smallint", "NullInt32")
-typeMap.set("mediumint", "NullInt32")
-typeMap.set("int", "NullInt32")
-typeMap.set("bigint", "NullInt64")
+typeMap.set("tinyint", ["NullInt32", "int8", "uint8"]);
+typeMap.set("smallint", ["NullInt32", "int16", "uint16"]);
+typeMap.set("mediumint", ["NullInt32", "int32", "uint32"]);
+typeMap.set("int", ["NullInt32", "int32", "uint32"]);
+typeMap.set("bigint", ["NullInt64", "int64", "uint64"]);
 
-typeMap.set("bit", "NullInt32")
-typeMap.set("bool", "NullBool")
-
-typeMap.set("float", "NullFloat64")
-typeMap.set("double", "NullFloat64")
-typeMap.set("decimal", "NullFloat64")
-
-typeMap.set("char", "NullString")
-typeMap.set("varchar", "NullString")
-typeMap.set("tinytext", "NullString")
-typeMap.set("text", "NullString")
-typeMap.set("mediumtext", "NullString")
+typeMap.set("bit", ["NullInt32", "int32", "uint32"]);
+typeMap.set("bool", ["NullBool", "bool", "bool"]);
 
 
-typeMap.set("date", "NullTime")
-typeMap.set("time", "NullTime")
-typeMap.set("datetime", "NullTime")
-typeMap.set("timestamp", "NullTime")
+typeMap.set("float", ["NullFloat64", "float64", "float64"]);
+typeMap.set("double", ["NullFloat64", "float64", "float64"]);
+typeMap.set("decimal", ["NullFloat64", "float64", "float64"]);
+
+typeMap.set("char", ["NullString", "string", "string"]);
+typeMap.set("varchar", ["NullString", "string", "string"]);
+typeMap.set("tinytext", ["NullString", "string", "string"]);
+typeMap.set("text", ["NullString", "string", "string"]);
+typeMap.set("mediumtext", ["NullString", "string", "string"]);
+
+
+typeMap.set("date", ["NullTime", "time.Time", "time.Time"]);
+typeMap.set("time", ["NullTime", "time.Time", "time.Time"]);
+typeMap.set("datetime", ["NullTime", "time.Time", "time.Time"]);
+typeMap.set("timestamp", ["NullTime", "time.Time", "time.Time"]);
 
 
 function commandSQL2Struct() {
@@ -50,11 +51,15 @@ class SQLField {
     Name: string;
     TypeName: string;
     Comment: string;
+    IsNotNull: boolean;
+    IsUnsigned: boolean;
 
-    constructor(Name: string, TypeName:string, Comment: string) {
+    constructor(Name: string, TypeName:string, Comment: string, IsNotNull: boolean, IsUnsigned: boolean) {
         this.Name = Name;
         this.TypeName = TypeName;
         this.Comment = Comment;
+        this.IsNotNull = IsNotNull;
+        this.IsUnsigned = IsUnsigned;
     }
 }
 
@@ -75,20 +80,30 @@ function GetTableStruct() {
                 let sqlfields: SQLField[] = [];
                 for(let i = startline + 1; i < endline ; i ++) {
                     let line = editor.document.lineAt(i);
-                    let linematches = line.text.match(new RegExp("`{0,}([^ `]+)`{0,} +([^ \\(]+).+COMMENT +(\\S+),{0,1}$", "i"));
+                    let linematches = line.text.match(new RegExp("`{0,}([^ `]+)`{0,} +([^ \\(]+)(.+)COMMENT +(\\S+),{0,1}$", "i"));
     
                     if(linematches) {
                         let gFieldName = sqlName2goName(linematches[1]);
                         if(gFieldName) {
                             let typename = linematches[2];
-                            let comment = linematches[3];
+                            let comment = linematches[linematches.length - 1];
 
                             if(comment[comment.length - 1] === ',') {
                                 comment = comment.substring(0, comment.length - 1);
                             }
 
-                            console.log(name, gname, linematches[1],  gFieldName,  linematches);
-                            let field = new SQLField(gFieldName, typename,comment );
+
+                            var IsNotNull:boolean = false;
+                            var IsUnsigned: boolean = false;
+
+                            let flagstr = linematches[3].toLowerCase();
+                            let fmatch = flagstr.match("not +null");
+                            if(fmatch) {
+                                IsNotNull = true;
+                            }
+
+                            IsUnsigned =  flagstr.includes("unsigned");
+                            let field = new SQLField(gFieldName, typename,comment, IsNotNull, IsUnsigned);
                             sqlfields.push(field);
                         }
 
@@ -100,7 +115,21 @@ function GetTableStruct() {
                 let fieldsstring = ""; 
 
                 sqlfields.forEach((sqlf) => {
-                    fieldsstring += `\t${sqlf.Name}\t${sqlf.TypeName}\t// ${sqlf.Comment}\n`;
+                    let tValue = typeMap.get(sqlf.TypeName);
+                    let typeName = sqlf.TypeName;
+
+                    if (tValue) {
+                        if(sqlf.IsNotNull) {
+                            if(sqlf.IsUnsigned) {
+                                typeName = tValue[2];
+                            } else {
+                                typeName = tValue[1];
+                            }
+                        } else {
+                            typeName = "sql." + tValue[0];
+                        }
+                    }
+                    fieldsstring += `\t${sqlf.Name}\t${typeName}\t// ${sqlf.Comment}\n`;
                 });
 
                 if(fieldsstring[fieldsstring.length - 1] === '\n') {

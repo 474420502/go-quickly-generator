@@ -78,9 +78,9 @@ CREATE TABLE `pay` (
 	`out_trade_no` varchar(32) NOT NULL COMMENT '商家业务线订单号',
 	`pay_type` tinyint(1) unsigned NOT NULL COMMENT '支付类型（在线支付、虚币支付、混合支付 ）',
 	`pay_m_id` bigint(20) unsigned NOT NULL COMMENT '支付方式ID',
-	`pay_m_code` varchar(16) NOT NULL COMMENT '支付方式编码',
+	`pay_m_code` varchar(16) COMMENT '支付方式编码',
 	`pay_m_name` varchar(32) NOT NULL COMMENT '支付方式名称',
-	`notify_ts` int(11) unsigned NOT NULL COMMENT '最新通知时间，Unix秒',
+	`notify_ts` int(11) unsigned COMMENT '最新通知时间，Unix秒',
 	`status_ts` int(11) unsigned NOT NULL COMMENT '状态变更时间，Unix秒',
 	`create_ts` int(11) unsigned NOT NULL COMMENT '创建时间，Unix秒',
 	`update_ts` int(11) unsigned NOT NULL COMMENT '修改时间，Unix秒',
@@ -109,4 +109,5 @@ func main() {
 	}
 	rows, _ := db.Query("")
 	defer rows.Close()
+
 }
