@@ -2,7 +2,7 @@
 	"name": "go-quickly-generator",
 	"displayName": "go-quickly-generator",
 	"description": "generator code quickly",
-	"version": "1.0.1",
+	"version": "1.1.1",
 	"publisher": "474420502",
 	"engines": {
 		"vscode": "^1.38.0"
