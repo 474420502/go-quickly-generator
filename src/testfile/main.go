@@ -71,7 +71,8 @@ type ExStruct struct {
 }
 
 /*
-CREATE TABLE `pay` (
+CREATE TABLE `pay`
+(
 	`id` bigint(20) unsigned NOT NULL COMMENT '主键，支付单id，支付单流水号（有规则）',
 	`m_id` bigint(20) unsigned NOT NULL COMMENT '签约商家id',
 	`m_payline_id` bigint(20) unsigned NOT NULL COMMENT '商家支付业务线id',
@@ -88,7 +89,7 @@ CREATE TABLE `pay` (
 	`paying_ts` int(11) unsigned NOT NULL COMMENT '支付中时间，Unix秒',
 	`payable_amount` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT '应付金额，精确到分',
 	`discount_amount` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT '支付中心优惠金额，精确到分',
-	`pay_amount` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT '支付中心实付金额，精确到分',
+	`pay_amount` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT '支付中心实付金额，精确到分'
 	PRIMARY KEY (`id`) USING BTREE,
 	UNIQUE KEY `idx_mpid_orno` (`m_payline_id`,`out_trade_no`) USING BTREE,
 	KEY `status_ts_index` (`status_ts`) USING BTREE,
@@ -109,5 +110,4 @@ func main() {
 	}
 	rows, _ := db.Query("")
 	defer rows.Close()
-
 }

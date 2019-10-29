@@ -13,15 +13,18 @@ typeMap.set("bigint", ["NullInt64", "int64", "uint64"]);
 
 typeMap.set("bit", ["NullInt32", "int32", "uint32"]);
 typeMap.set("bool", ["NullBool", "bool", "bool"]);
+typeMap.set("boolean", ["NullBool", "bool", "bool"]);
 
 
 typeMap.set("float", ["NullFloat64", "float64", "float64"]);
 typeMap.set("double", ["NullFloat64", "float64", "float64"]);
+typeMap.set("real", ["NullFloat64", "float64", "float64"]);
 typeMap.set("decimal", ["NullFloat64", "float64", "float64"]);
 typeMap.set("numeric", ["NullFloat64", "float64", "float64"]);
 
 
 typeMap.set("char", ["NullString", "string", "string"]);
+typeMap.set("character", ["NullString", "string", "string"]);
 typeMap.set("varchar", ["NullString", "string", "string"]);
 typeMap.set("tinytext", ["NullString", "string", "string"]);
 typeMap.set("text", ["NullString", "string", "string"]);
@@ -46,12 +49,14 @@ function commandSQL2Struct() {
 }
 
 function sqlName2goName(name: string): string | undefined { 
-    let ss = name.split(new RegExp("[^a-zA-Z]+"));
+    let ss = name.split(new RegExp("[^a-zA-Z `]+"));
     if(ss.length) {
 
         let gName = "";
         ss.forEach( (v) => {
-            gName += v[0].toLocaleUpperCase() + v.substr(1);
+            if(v.length) {
+                gName += v[0].toLocaleUpperCase() + v.substr(1);
+            }
         } );
         return gName;
     }
@@ -74,7 +79,7 @@ class SQLField {
 }
 
 function GetTableStruct() {
-    let result = GetPatternRange(new RegExp("CREATE +TABLE +`{0,1}([^`]+)`{0,1} +\\(", "i"), "()");
+    let result = GetPatternRange(new RegExp("CREATE +TABLE +`{0,1}([^`]+)`{0,1}", "i"), "()");
     if(result) {
         let editor = vscode.window.activeTextEditor ;
         if(editor) {
@@ -85,29 +90,39 @@ function GetTableStruct() {
             let startline = result[1] as number;
             let endline = result[2] as number;
 
-            
-
             if(gname) {
 
                 let sqlfields: SQLField[] = [];
                 for(let i = startline + 1; i < endline ; i ++) {
                     let line = editor.document.lineAt(i);
-                    let linematches = line.text.match(new RegExp("`{0,}([^ `]+)`{0,} +([^ \\(]+)(.+)COMMENT +(\\S+),{0,1}$", "i"));
-    
+                    let linematches = line.text.match(new RegExp("`{0,1}([^ `]+)`{0,1} +([^ \\(]+)(.+)", "i"));
                     if(linematches) {
                         let gFieldName = sqlName2goName(linematches[1]);
                         if(gFieldName) {
                             let typename = linematches[2];
-                            let comment = linematches[linematches.length - 1];
+                            let remainstr = linematches[3];
 
-                            if(comment[comment.length - 1] === ',') {
-                                comment = comment.substring(0, comment.length - 1);
+                            if(gFieldName === "KEY" || typename === "KEY") {
+                                break;
+                            }
+
+                            // let comment = linematches[linematches.length - 1];
+                            var comment: string = "";
+                            let cm = remainstr.match("(.+) COMMENT +(\\S+),{0,1}$");
+                            if(cm) {
+                                comment = cm[2];
+                
+                                if(comment[comment.length - 1] === ',') {
+                                    comment = comment.substring(0, comment.length - 1);
+                                }
+
+                                remainstr = cm[1];
                             }
 
                             var IsNotNull:boolean = false;
                             var IsUnsigned: boolean = false;
 
-                            let flagstr = linematches[3].toLowerCase();
+                            let flagstr = remainstr.toLowerCase();
                             let fmatch = flagstr.match("not +null");
                             if(fmatch) {
                                 IsNotNull = true;
@@ -124,7 +139,7 @@ function GetTableStruct() {
                 // 创建结构体
                 let structstring = "";
                 let fieldsstring = ""; 
-
+ 
                 sqlfields.forEach((sqlf) => {
                     let tValue = typeMap.get(sqlf.TypeName);
                     let typeName = sqlf.TypeName;
@@ -148,10 +163,8 @@ function GetTableStruct() {
                 }
 
                 structstring = `\ntype ${gname} struct {\n${fieldsstring}\n}\n`;
-                console.log(sqlfields);
-                console.log(structstring);
-
-
+                // console.log(sqlfields);
+                // console.log(structstring);
                 let ss = new vscode.SnippetString(structstring);
                 for(let n = endline;n < editor.document.lineCount; n++) {
                     if(editor.document.lineAt(n).text === "") {
