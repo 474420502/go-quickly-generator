@@ -4,6 +4,12 @@ All notable changes to the "go-quickly-generator" extension will be documented i
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.1.2] - 2019-10-29
+
+### Fixed
+
+- sql to struct can't distinguish some field
+
 ## [1.1.1] - 2019-10-28
 
 ### Added
