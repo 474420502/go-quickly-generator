@@ -235,8 +235,8 @@ function getAbbreviation(name: string): string | undefined {
             m.forEach((v) => {
                 shortName += v.toLowerCase();
             });
-            return shortName;
         }
+        return shortName;
     }
     return undefined;
 }

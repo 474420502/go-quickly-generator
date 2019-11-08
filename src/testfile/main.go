@@ -70,6 +70,11 @@ type ExStruct struct {
 	child string
 }
 
+type Parent struct {
+	Hello string
+	DoIt  int
+}
+
 /*
 CREATE TABLE `pay`
 (
